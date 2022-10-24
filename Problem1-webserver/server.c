@@ -130,7 +130,7 @@ int main( int argc, char *argv[] ) {
 
       printf("\n----$$----\nthis is recevied client header : \n");
       printf("%s\n",buf);
-
+	//브라우져가 보낸 헤더 파싱. 5번째 줄에 Authorization정보가 있고, Authorization : Basic encoded 값.
       char *temp=strtok(buf,"\n");
       char *temp2=strtok(NULL,"\n");
       char *temp3=strtok(NULL,"\n");
@@ -151,7 +151,7 @@ int main( int argc, char *argv[] ) {
       printf("and then word => %s ( it should be the token.) \n",TOKEN);
       printf("parsing ends.\n");
       
-      if(strcmp(AUTHORIZATION,"Authorization:")!=0){
+      if(strcmp(AUTHORIZATION,"Authorization:")!=0){ // Auth 정보가 없으면 401 에러 후 Auth를 요청한다.
       	char message[]="HTTP/1.1 401 Unauthorized\nWWW-Authenticate: Basic realm=\"Access to the staging site\"";
       	int length=strlen(message);
       	int bytes=0;
@@ -162,12 +162,12 @@ int main( int argc, char *argv[] ) {
       	}
 	shutdown(newsockfd,SHUT_RDWR);
         close(newsockfd);
-	//여기선 닫아주면 안될 지도???
+	
 	continue;
       }
 
       
-      if (strcmp(TOKEN,token)==0){
+      if (strcmp(TOKEN,token)==0){ // Auth 정보가 맞으면 success, 이후 auth 루프는 break.
       	printf("authenticate success. file transfer.\n");
 	/*char message[]="HTTP/1.1 200 OK";
         int length=strlen(message);
@@ -178,7 +178,7 @@ int main( int argc, char *argv[] ) {
                 length=length-bytes;
         }
 	*/
-	int readn=0;
+	int readn=0;//이때 index.html이 바로 뜨도록 열어준다.
         int fd=open("./index.html",O_RDONLY);
         memset(buf,0x00,MAX);
         while((readn=read(fd,buf,1024))>0)
@@ -191,7 +191,7 @@ int main( int argc, char *argv[] ) {
 	//continue;
 	break; // 다음 루프로 가려면 이렇게 break해 줘야 하지만...
       }
-      else{
+      else{//auth가 어떤 식으로든 실패하면 다시 401 에러를 내뱉고 auth를 재요청한다.
 	printf("authenticate fail. close\n");
 	char message[]="HTTP/1.1 401 Unauthorized\nWWW-Authenticate: Basic realm=\"Access to the staging site\"";
         int length=strlen(message);
@@ -229,7 +229,7 @@ int main( int argc, char *argv[] ) {
   close(newsockfd);
 	
 	//printf("get out of respond func.\n");
-	//auth_flag=0;//이후로는 auth flag가 0이기 때문에 이 loop에서 새로운 연결을 기다린다.
+	
       }
 	
 
@@ -237,11 +237,11 @@ int main( int argc, char *argv[] ) {
 }
 //TODO: complete respond function 40% of score
 int respond(int sock) {
-  char filename[MAX];
-  char buf[MAX];
+  char filename[MAX]; //파일명을 받기 위한 변수
+  char buf[MAX]; //브라우져 헤더 값 버퍼
   memset(buf,0x00,MAX);
   memset(filename,0x00,MAX);
-  printf("enter respond func\n");
+  //printf("enter respond func\n");
   
   if(read(sock,buf,MAX)<=0)
   {
@@ -250,22 +250,21 @@ int respond(int sock) {
   }
   //printf("\n this is received client.(inside respond func)\n");
   //printf("%s\n",buf);
-
+	//브라우져 헤더 값을 파싱한다.
   char *temp=strtok(buf," \t\n\r");
   char *name=strtok(NULL," \t\n\r");
-  printf("this is method : %s\n",temp);
+  printf("this is method : %s\n",temp); //method 다음에 url이 있다.
   printf("this is url(filename) : %s\n",name);
   char add_dot[1024]=".";
-  strcat(add_dot,name);
+  strcat(add_dot,name);//url에서 편의상 dot을 추가해주면, 바로 시스템상 경로가 된다.
   strcpy(filename,add_dot);
   printf("real filename : %s\n",filename);
-  // 파일명은 request header에서 method 다음에 두번째로 온다.
-  // 근데 이 파일명은 ./~~이렇게 되있어야 제대로 인식한다. 혹은, /이게 없거나.
+  
 
   char message[MAX];
   memset(message,0x00,MAX);
-  printf("is file exists ? : %d\n",access(filename,R_OK));
-  if(access(filename,R_OK)!=0 && strcmp(filename,"/")!=0)
+  //printf("is file exists ? : %d\n",access(filename,R_OK));
+  if(access(filename,R_OK)!=0 && strcmp(filename,"/")!=0)//해당 파일이 존재하지 않고, 예외적으로 '/' 기본 경로인 것도 아니면, 404 에러를 내뱉는다.
   {
 	sprintf(message,"HTTP/1.1 404 Not Found");
 	int length=strlen(message);
@@ -276,7 +275,7 @@ int respond(int sock) {
       		length=length-bytes;
   	}
   }
-  else if(strcmp(filename,"./")==0)
+  else if(strcmp(filename,"./")==0) //예외적으로 ./ 기본 경로는 index.html을 출력한다.
   {
 	int readn=0;
         int fd=open("./index.html",O_RDONLY);
@@ -288,10 +287,10 @@ int respond(int sock) {
         close(fd);
   }
   else{
-	char* extension=strrchr(filename,'.');
+	char* extension=strrchr(filename,'.'); // 파일 확장자를 분간한다.
 	printf("extension is : %s\n",extension);
 	if(strcmp(extension,".html")==0 || strcmp(extension,".js")==0 || strcmp(extension,".css")==0)
-	{
+	{ //텍스트 데이터들은 아래의 방법으로 전송한다.
 		int readn=0;
   		int fd=open(filename,O_RDONLY);
 		memset(buf,0x00,MAX);
@@ -302,7 +301,7 @@ int respond(int sock) {
 		close(fd);
 	}
 	else if(strcmp(extension,".jpg")==0 || strcmp(extension,".png")==0)
-	{
+	{ // 그림 파일은 fopen으로 열고 fread로 읽어들여 전송한다.
 		int read=0;
 		FILE * picture=fopen(filename,"r");
 		if (picture == NULL) {

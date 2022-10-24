@@ -153,12 +153,9 @@ int push_torrent_to_peer(char *peer, int port, torrent_file *torrent)
     sprintf(buf, "PUSH_TORRENT %d %x %x", listen_port, id_hash, info.hash);
     send_socket(sockfd, buf, STRING_LEN);
     int result=send_socket(sockfd, (char *)&info, sizeof(torrent_info));
-    //if (send(sockfd,(char *)&info,sizeof(torrent_info),0)  == -1) {
-     //     perror("send error");
-      //    exit(1);
-      //}
+    
 	
-	//printf("push torrent에서, send한 info 정보. name %s, hash %d, size %d, block_num %d, block_size %d, block info %s\n",info.name,info.hash,info.size,info.block_num,info.block_size,info.block_info);
+//printf("push torrent에서, send한 info 정보. name %s, hash %d, size %d, block_num %d, block_size %d, block info %s\n",info.name,info.hash,info.size,info.block_num,info.block_size,info.block_info);
     close_socket(sockfd);
     return 0;
 }
@@ -195,11 +192,11 @@ int push_peers_to_peer(char *peer, int port, torrent_file *torrent)
         return -1;
     }
     char buf[STRING_LEN] = {0};
-    char temp_peer_ip[MAX_PEER_NUM][STRING_LEN]; // IP address of each peer
+    char temp_peer_ip[MAX_PEER_NUM][STRING_LEN]; // IP address of each peer, receiving peer를 제외하고 임시 배열을 전송할 것이다.
     int temp_peer_port[MAX_PEER_NUM];
     int count=0;
 	
-	//remove the receiving peer if exists.
+	//remove the receiving peer if exists!
 	int minus=0;
     for(int i=0;i<torrent->num_peers;i++)
     {	
@@ -345,9 +342,7 @@ int server_routine (int sockfd)
 	
 	unsigned int port=(unsigned int) strtoul(_port,&End,10);
 	unsigned int peer_id_hash=(unsigned int) strtoul(_id_hash,&End,16);
-	//printf("port int : %d\n",port);
-	//printf("피어_id_hash(즉 보낸 놈 해쉬) int : %x\n",peer_id_hash);
-	//printf("내꺼 피어 id hash : %x\n",id_hash);
+	
 	//unsigned int torrent_hash=(unsigned int) strtoul(_torrent_hash,%End, 16);
 	//unsigned int torrent_num_peers; //int num
 	//unsigned int block_index; //int num
@@ -374,19 +369,19 @@ int server_routine (int sockfd)
         char cmd[1024]={0,};
 	strcpy(cmd,name);//cmd가 name
         int peer_port=port;
-	//printf("cmd cpy 된거 : %s\n",cmd);
+	
         
         if (silent_mode == 0)
             printf ("from peer %s:%d\n", peer, peer_port);
 
         // TODO: Check if command is sent from myself, and if it is, ignore the message. (HINT: use id_hash) (5 Points)
-	if (peer_id_hash==id_hash)
+	if (peer_id_hash==id_hash) //전송된 피어의 해쉬가 내 해쉬랑 같으면 무시하면 된다.
 	{
 		close(newsockfd);
 		printf("this is command from myself. close.\n");
 		continue;
 	}
-	printf("command : %s\n",cmd);
+	//printf("command : %s\n",cmd);
         // Take action based on command.
         // Dont forget to close the socket, and reset the peer_req_num of the peer that have sent the command to zero.
         // If the torrent file for the given hash value is not found in the torrent list, simply ignore the message. (Except for PUSH_TORRENT command)
@@ -420,20 +415,15 @@ int server_routine (int sockfd)
             // Hint: You might want to use get_torrent(), copy_info_to_torrent(), init_torrent_dynamic_data(), add_torrent(), or add_peer_to_torrent().
             unsigned int torrent_hash = strtoul(strtok(NULL, " "), NULL, 16);
             torrent_file *torrent = get_torrent(torrent_hash);
-	    //printf("push torrent에서 토렌트 주소 : %p\n",torrent);	
+	    	
             if (torrent == NULL) 
             {
                 torrent = (torrent_file *)calloc(1, sizeof(torrent_file));
                 torrent_info info;
-		//memset((char *)&info,0x00,sizeof(torrent_info));
+		
 		
                 recv_socket(newsockfd, (char *)&info, sizeof(torrent_info));
 		
-		//printf("이프  문에서, received torrent info : name %s, hash %d, size %d, block_num %d, block_size %d, block info %s\n",info.name,info.hash,info.size,info.block_num,info.block_size,info.block_info);
-                // for(int j=0;j<info.block_num;j++)
-                //{
-                //      printf("%d ",info.block_info[j]);
-                //}
 		int result=copy_info_to_torrent(torrent, &info);
 		init_torrent_dynamic_data (torrent);
                 
@@ -446,7 +436,7 @@ int server_routine (int sockfd)
             close_socket(newsockfd);
         }
         // Refer to network_functions.h for more details on what to send and receive.
-        else if (strcmp(cmd, "REQUEST_PEERS") == 0) 
+        else if (strcmp(cmd, "REQUEST_PEERS") == 0) // 매번, 알려지지 않은 피어에게서 온 수신은 피어를 추가한다. 
         {
 		close_socket(newsockfd);
 		unsigned int torrent_hash = strtoul(strtok(NULL, " "), NULL, 16);
@@ -474,13 +464,14 @@ int server_routine (int sockfd)
 		torrent_file *torrent = get_torrent(torrent_hash);
             if (torrent != NULL)
             {
-		printf("피어가 보낸 num of peers : %d\n",torrent_num_peers);
+		printf("피어가 보낸 num of peers : %d\n",torrent_num_peers); // 우리 실험에서는 이것은 무조건 0이다(자기 자신 외에 다른 피어가 없어서)
 		char temp_peer_ip[MAX_PEER_NUM][STRING_LEN]; // IP address of each peer
     		int temp_peer_port[MAX_PEER_NUM];
                 recv_socket(newsockfd, (char *)temp_peer_ip, sizeof(temp_peer_ip));
 		recv_socket(newsockfd, (char *)temp_peer_port,sizeof(temp_peer_port));
 		for(int i=0;i<torrent_num_peers;i++)
 		{
+			//보내준  peer list에 대해 토렌트에 없으면, 토렌트에 피어를 추가한다.
 			if(get_peer_idx(torrent,(char *) temp_peer_ip[i],temp_peer_port[i])<0 && temp_peer_ip[i]!=NULL && temp_peer_port[i]!=0)
 			{
 				add_peer_to_torrent(torrent,temp_peer_ip[i],temp_peer_port[i],NULL);
@@ -528,13 +519,9 @@ int server_routine (int sockfd)
             {   
 		char temp_block_info [MAX_BLOCK_NUM];
                 recv_socket(newsockfd, (char *)temp_block_info , sizeof(temp_block_info));
-                
+                //피어  block info를 받은 info로 업데이트해준다.
                 update_peer_block_info(torrent,peer,peer_port,temp_block_info);
-		//printf("업데이트할 블록 인포 받은거=\n");
-		//for(int j=0;j<torrent->block_num;j++)
-		//{
-		//	printf("%d ",temp_block_info[j]);
-		//}
+		
 		if (get_peer_idx (torrent, peer, peer_port) <0)
                         {
                         add_peer_to_torrent(torrent, peer, peer_port, NULL);
@@ -580,19 +567,21 @@ int server_routine (int sockfd)
 		torrent_file *torrent = get_torrent(torrent_hash);
 		if (torrent != NULL)
             {
+		    //데이터를 받을 그릇 temp_data
                 char *temp_data;
 		temp_data=(char *)malloc(sizeof(char) * torrent->block_size);
 		recv_socket(newsockfd, (char *)temp_data, sizeof(torrent->block_size));
 		
 		//먼저, 해당 block이 다운로드 되었음을 표시하기 위해 block info를 수정하고,
 		//그 다음 실제로 block에다가 다운로드된 데이터를 넣는다.
+		//downloaded block num도 증가시킨다.
 		//그리고 그 block까지가 완성된 토렌트를 파일로 만든다.
 		//printf("푸시 블락에서 블록 인덱스 : %d\n",block_index);
 		torrent->block_info[block_index]=1;
 		torrent->downloaded_block_num++;
 		sprintf(torrent->block_ptrs[block_index],"%s",temp_data);
 		torrent->data=torrent->block_ptrs[0];
-		//위의 코드는 설마 구현되어 있지 않을까...?
+		//data가 block ptrs 처음 가리키는건  설마 구현되어 있지 않을까...? 확실치 않으니 추가한다.
 		
 		
 		save_torrent_into_file(torrent,torrent->name);
@@ -638,6 +627,7 @@ int client_routine ()
     //저 peer reqs는 어떻게 활용하라는 건지 모르겠다...
     char *peer_list_ip[MAX_PEER_NUM]={0};
     int peer_list_port[MAX_PEER_NUM]={0};
+    // 현재 클라이언트가 하나 이상 전송한 피어의 ip, port의 리스트.
     int count=0;
     for (int i = 0; i < num_torrents; i++)
     {
@@ -672,7 +662,7 @@ int client_routine ()
 					}
 					if(not_included_flag==1)
 					{
-						
+						//block request를 보낸다.
 						int result=request_block_from_peer(torrent->peer_ip[k],torrent->peer_port[k],torrent,j);
                                          	//int result=request_block_from_peer_ans(torrent->peer_ip[k],torrent->peer_port[k],torrent,j);
 						//이때 torrent의 peer_req_num 증가

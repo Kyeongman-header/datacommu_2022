@@ -189,7 +189,7 @@ int main( int argc, char *argv[] ) {
       	shutdown(newsockfd,SHUT_RDWR);
       	close(newsockfd);
 	//continue;
-	break; // 다음 루프로 가려면 이렇게 break해 줘야 하지만, 이러면 코드가 말이 안된다.
+	break; // 다음 루프로 가려면 이렇게 break해 줘야 하지만...
       }
       else{
 	printf("authenticate fail. close\n");
@@ -203,7 +203,6 @@ int main( int argc, char *argv[] ) {
         }
        shutdown(newsockfd,SHUT_RDWR);
        close(newsockfd);
-       //닫아주면 안될 지도?
         continue;
       }
 
@@ -213,8 +212,7 @@ int main( int argc, char *argv[] ) {
 
     }
     //Respond loop
-    //사실 이렇게 두개의 loop로 나누는 방법은 의미가 없다. chrome을 비롯한 대부분의 브라우져는 쿠키에 authenticate 정보를 저장한다.
-	//따라서 처음 auth success를 하면 그 뒤부터는 auth를 거치지 않고 해당 클라이언트는 respond 함수로 갈 수 있다.
+    	//처음 auth success를 하면 그 뒤부터는 auth를 거치지 않고 모든 클라이언트는 respond 함수로 갈 수 있다.
 	
 	while (1) {
 	
@@ -226,9 +224,11 @@ int main( int argc, char *argv[] ) {
 	
 	
 	respond(newsockfd);
+	printf("close\n");
+  shutdown(newsockfd,SHUT_RDWR);
+  close(newsockfd);
 	
-	
-	printf("get out of respond func.\n");
+	//printf("get out of respond func.\n");
 	//auth_flag=0;//이후로는 auth flag가 0이기 때문에 이 loop에서 새로운 연결을 기다린다.
       }
 	
@@ -320,10 +320,6 @@ int respond(int sock) {
 
   }
   
- 
-  printf("close\n");
-  shutdown(sock,SHUT_RDWR);
-  close(sock);
 
     
   return 0;

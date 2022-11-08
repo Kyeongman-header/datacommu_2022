@@ -570,7 +570,7 @@ int server_routine (int sockfd)
 		    //데이터를 받을 그릇 temp_data
                 char *temp_data;
 		temp_data=(char *)malloc(sizeof(char) * torrent->block_size);
-		recv_socket(newsockfd, (char *)temp_data, sizeof(torrent->block_size));
+		recv_socket(newsockfd, (char *)temp_data, (torrent->block_size));
 		
 		//먼저, 해당 block이 다운로드 되었음을 표시하기 위해 block info를 수정하고,
 		//그 다음 실제로 block에다가 다운로드된 데이터를 넣는다.
@@ -589,8 +589,10 @@ int server_routine (int sockfd)
 		if(torrent->block_num==torrent->downloaded_block_num)
 		{
 			torrent->data=(char *) malloc(sizeof(char) * torrent->block_size * torrent->block_num);
-				for(int b=0; b<torrent->block_num;b++)
+			printf("push done 100퍼센트\n");
+			for(int b=0; b<torrent->block_num;b++)
 			{
+				printf("%s",torrent->block_ptrs[b]);
 				sprintf(torrent->data,"%s",torrent->block_ptrs[b]);
 			}
 		}

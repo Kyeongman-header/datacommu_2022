@@ -568,8 +568,8 @@ int server_routine (int sockfd)
 		if (torrent != NULL)
             	{
 		    //데이터를 받을 그릇 temp_data
-                char *temp_data;
-		temp_data=(char *)malloc(sizeof(char) * torrent->block_size);
+                
+		
 		recv_socket(newsockfd, torrent->block_ptrs[block_index], (torrent->block_size));
 		
 		//먼저, 해당 block이 다운로드 되었음을 표시하기 위해 block info를 수정하고,
@@ -579,26 +579,9 @@ int server_routine (int sockfd)
 		//printf("푸시 블락에서 블록 인덱스 : %d\n",block_index);
 		torrent->block_info[block_index]=1;
 		torrent->downloaded_block_num++;
-		//torrent->block_ptrs[block_index]=(char *) malloc(sizeof(char) * torrent->block_size);
-		//strcpy(torrent->block_ptrs[block_index],temp_data);
-		
-		
-		//printf("block index : %d\n",block_index);
-		//printf("torrent->block_ptrs[block_index] : %s\n",torrent->block_ptrs[block_index]);
-		
 		torrent->data=torrent->block_ptrs[0];
 		
-		/*if(torrent->block_num==torrent->downloaded_block_num)
-		{
-			torrent->data=(char *) malloc(sizeof(char) * torrent->block_size * torrent->block_num);
-			printf("push done 100퍼센트\n");
-			for(int b=0; b<torrent->block_num;b++)
-			{
-				printf("%s",torrent->block_ptrs[b]);
-				sprintf(torrent->data,"%s",torrent->block_ptrs[b]);
-			}
-		}*/
-		//free(temp_data);
+		
 		//data가 block ptrs 처음 가리키는건  설마 구현되어 있지 않을까...? 확실치 않으니 추가한다.
 		
 		
@@ -692,7 +675,8 @@ int client_routine ()
                          if(result<0 && torrent->peer_req_num[get_peer_idx(torrent,torrent->peer_ip[k],torrent->peer_port[k])] > PEER_EVICTION_REQ_NUM)
 						{//설마 num_peers 같은건 해당 함수에서 줄여주겠지...
                                                         remove_peer_from_torrent(torrent,torrent->peer_ip[k],torrent->peer_port[k]);
-                                          	}
+                                          	
+						}
 						
 						peer_list_ip[count]=(char *) malloc(STRING_LEN);
 						//그리고 req peer list에 해당 peer의 ip와 port를 저장한다.

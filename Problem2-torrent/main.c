@@ -579,8 +579,10 @@ int server_routine (int sockfd)
 		//printf("푸시 블락에서 블록 인덱스 : %d\n",block_index);
 		torrent->block_info[block_index]=1;
 		torrent->downloaded_block_num++;
-		sprintf(torrent->block_ptrs[block_index],"%s",temp_data);
-		torrent->data=torrent->block_ptrs[0];
+		torrent->block_ptrs[block_index]=(char *) malloc(sizeof(char) * torrent->block_size);
+		strcpy(torrent->block_ptrs[block_index],temp_data);
+		//torrent->data=torrent->block_ptrs[0];
+		free(temp_data);
 		//data가 block ptrs 처음 가리키는건  설마 구현되어 있지 않을까...? 확실치 않으니 추가한다.
 		
 		

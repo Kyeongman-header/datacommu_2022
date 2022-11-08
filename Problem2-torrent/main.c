@@ -581,7 +581,19 @@ int server_routine (int sockfd)
 		torrent->downloaded_block_num++;
 		torrent->block_ptrs[block_index]=(char *) malloc(sizeof(char) * torrent->block_size);
 		strcpy(torrent->block_ptrs[block_index],temp_data);
-		//torrent->data=torrent->block_ptrs[0];
+		
+		
+		printf("block index : %d\n",block_index);
+		//printf("torrent->block_ptrs[block_index] : %s\n",torrent->block_ptrs[block_index]);
+		
+		if(torrent->block_num==torrent->downloaded_block_num)
+		{
+			torrent->data=(char *) malloc(sizeof(char) * torrent->block_size * torrent->block_num);
+				for(int b=0; b<torrent->block_num;b++)
+			{
+				sprintf(torrent->data,"%s",torrent->block_ptrs[b]);
+			}
+		}
 		free(temp_data);
 		//data가 block ptrs 처음 가리키는건  설마 구현되어 있지 않을까...? 확실치 않으니 추가한다.
 		

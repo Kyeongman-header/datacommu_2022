@@ -566,11 +566,11 @@ int server_routine (int sockfd)
                 unsigned int block_index=(unsigned int) strtoul(_block_index,&End, 10);
 		torrent_file *torrent = get_torrent(torrent_hash);
 		if (torrent != NULL)
-            {
+            	{
 		    //데이터를 받을 그릇 temp_data
                 char *temp_data;
 		temp_data=(char *)malloc(sizeof(char) * torrent->block_size);
-		recv_socket(newsockfd, (char *)temp_data, (torrent->block_size));
+		recv_socket(newsockfd, torrent->block_ptrs[block_index], (torrent->block_size));
 		
 		//먼저, 해당 block이 다운로드 되었음을 표시하기 위해 block info를 수정하고,
 		//그 다음 실제로 block에다가 다운로드된 데이터를 넣는다.
@@ -579,14 +579,16 @@ int server_routine (int sockfd)
 		//printf("푸시 블락에서 블록 인덱스 : %d\n",block_index);
 		torrent->block_info[block_index]=1;
 		torrent->downloaded_block_num++;
-		torrent->block_ptrs[block_index]=(char *) malloc(sizeof(char) * torrent->block_size);
-		strcpy(torrent->block_ptrs[block_index],temp_data);
+		//torrent->block_ptrs[block_index]=(char *) malloc(sizeof(char) * torrent->block_size);
+		//strcpy(torrent->block_ptrs[block_index],temp_data);
 		
 		
-		printf("block index : %d\n",block_index);
+		//printf("block index : %d\n",block_index);
 		//printf("torrent->block_ptrs[block_index] : %s\n",torrent->block_ptrs[block_index]);
 		
-		if(torrent->block_num==torrent->downloaded_block_num)
+		torrent->data=torrent->block_ptrs[0];
+		
+		/*if(torrent->block_num==torrent->downloaded_block_num)
 		{
 			torrent->data=(char *) malloc(sizeof(char) * torrent->block_size * torrent->block_num);
 			printf("push done 100퍼센트\n");
@@ -595,8 +597,8 @@ int server_routine (int sockfd)
 				printf("%s",torrent->block_ptrs[b]);
 				sprintf(torrent->data,"%s",torrent->block_ptrs[b]);
 			}
-		}
-		free(temp_data);
+		}*/
+		//free(temp_data);
 		//data가 block ptrs 처음 가리키는건  설마 구현되어 있지 않을까...? 확실치 않으니 추가한다.
 		
 		
